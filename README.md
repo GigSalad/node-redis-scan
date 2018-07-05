@@ -1,0 +1,3 @@
+# Node Redis key scanner
+
+Not quite ready yet...
