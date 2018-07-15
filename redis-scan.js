@@ -17,9 +17,10 @@ class RedisScan {
 	 * Scans the entire Redis keyspace to find matching keys. The matching
 	 * keys are returned in sets via the `eachScanCallback` function which is
 	 * called after each iteration of the Redis `SCAN` command. This method is
-	 * useful if you want to operate on chunks and/or at the same time as the
-	 * keyspace is being scanned and/or you want to be efficient when matching
-	 * tens of thousands or even millions of keys.
+	 * useful if you want to operate on chunks and/or perform work with results
+	 * at the same time as the keyspace is being scanned. That is, you want to
+	 * be efficient while searching through or expecting to match on tens of
+	 * thousands or even millions of keys.
 	 *
 	 * @name eachScan
 	 *
@@ -58,7 +59,7 @@ class RedisScan {
 					eachScanCallback(matchingKeys);
 
 					// We're done once Redis returns 0 for the next cursor.
-					if (cursor === 0) {
+					if (cursor === '0') {
 						callback(null, matchingKeysCount);
 					} else {
 						// Otherwise, call this function again AKA recurse...
