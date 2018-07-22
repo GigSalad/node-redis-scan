@@ -35,11 +35,11 @@ const client = redis.createClient();
 const scanner = new redisScan(client);
 
 scanner.scan('some-pattern*', (err, matchingKeys) => {
-	if (err) throw(err);
+    if (err) throw(err);
 
-	// matchingKeys will be an array of strings if matches were found
-	// otherwise it will be an empty array.
-	console.log(matchingKeys);
+    // matchingKeys will be an array of strings if matches were found
+    // otherwise it will be an empty array.
+    console.log(matchingKeys);
 });
 ```
 
@@ -69,16 +69,16 @@ const scanner = new redisScan(client);
 scanner.eachScan('some-pattern*', (matchingKeys) => {
     // Depending on the pattern being scanned for, many or most calls to
     // this function will be passed an empty array.
-	if (matchingKeys.length) {
-		// matchingKeys found after this iteration of the SCAN command.
-		console.log(matchingKeys);
-	}
+    if (matchingKeys.length) {
+        // matchingKeys found after this iteration of the SCAN command.
+        console.log(matchingKeys);
+    }
 }, (err, matchCount) => {
-	if (err) throw(err);
+    if (err) throw(err);
 
-	// matchCount will be an integer count of how many total keys
-	// were found and passed to the intermediate callback.
-	console.log(`Found ${matchCount} keys.`);
+    // matchCount will be an integer count of how many total keys
+    // were found and passed to the intermediate callback.
+    console.log(`Found ${matchCount} keys.`);
 });
 ```
 
