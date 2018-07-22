@@ -26,12 +26,11 @@ class RedisScan {
 	 *
 	 * @method
 	 *
-	 * @param {String} pattern - A glob-style string pattern of keys to match.
+	 * @param {String} pattern - A Redis glob-style string pattern of keys to
+	 * match.
 	 *
 	 * @param {Function} eachScanCallback - A function called after each
-	 * call to the Redis `SCAN` command. Invoked with (matchingKeys). That is,
-	 * this callback will be passed one parameter which is an array of strings.
-	 * These strings are the Redis keys that matched the given pattern.
+	 * call to the Redis `SCAN` command. Invoked with (matchingKeys).
 	 *
 	 * @param {Function} [callback] - A function called after the full scan has
 	 * completed and all keys have been returned.
@@ -39,9 +38,8 @@ class RedisScan {
 	eachScan(pattern, eachScanCallback, callback) {
 		let matchingKeysCount = 0;
 
-		// Scanning in Redis could be implemented a few ways. Since we're
-		// using the standard `scan()` method of the node-redis library we'll
-		// do it with a recursive function.
+		// Because we're using the `scan()` method of the node-redis library
+		// a recursive function seems easiest here.
 		const recursiveScan = (cursor = 0) => {
 			// Build a Redis `SCAN` command using the `MATCH` option.
 			// See: https://redis.io/commands/scan#the-match-option
@@ -49,10 +47,10 @@ class RedisScan {
 				if (err) {
 					callback(err);
 				} else {
-					// node-redis returns an array with two elements. The
+					// client.scan() returns an array with two elements. The
 					// first element is the next cursor and the second is an
 					// array of matching keys (which might be empty). We'll
-					// destructure this into two constants.
+					// destructure this into two variables.
 					const [cursor, matchingKeys] = data;
 
 					matchingKeysCount += matchingKeys.length;
@@ -62,8 +60,8 @@ class RedisScan {
 					if (cursor === '0') {
 						callback(null, matchingKeysCount);
 					} else {
-						// Otherwise, call this function again AKA recurse...
-						// passing the next cursor of course.
+						// Otherwise, call this function again AKA recurse
+						// and pass the next cursor.
 						recursiveScan(cursor);
 					}
 				}
@@ -85,7 +83,8 @@ class RedisScan {
 	 *
 	 * @method
 	 *
-	 * @param {String} pattern - A glob-style string pattern of keys to match.
+	 * @param {String} pattern - A Redis glob-style string pattern of keys to
+	 * match.
 	 *
 	 * @param {Function} [callback] - A function called after the full scan
 	 * of the Redis keyspace completes having searched for the given pattern.
