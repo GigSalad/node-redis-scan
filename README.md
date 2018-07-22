@@ -16,7 +16,7 @@ Instantiate this class with a [Node Redis client](https://github.com/NodeRedis/n
 
 ### The `scan()` method
 
-The `scan()` method provides the easiest way to scan your key space with a single callback that will be passed all matching keys. Depending on the size of your keyspace (millions of keys and beyond) this process might take many seconds or longer.
+The `scan()` method provides the easiest way to scan your keyspace with a single callback that will be passed all matching keys. Depending on the size of your keyspace (millions of keys and beyond) this process might take many seconds or longer.
 
 **Parameters**
 
@@ -34,7 +34,7 @@ const redisScan = require('node-redis-scan');
 const client = redis.createClient();
 const scanner = new redisScan(client);
 
-scanner.scan('some-pattern*', function(err, matchingKeys) {
+scanner.scan('some-pattern*', (err, matchingKeys) => {
 	if (err) throw(err);
 
 	// matchingKeys will be an array of strings if matches were found
