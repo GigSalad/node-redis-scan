@@ -45,9 +45,9 @@ scanner.scan('some-pattern*', (err, matchingKeys) => {
 
 ### The `eachScan()` method
 
-The `eachScan()` method is useful if you want to perform work with matched keys at the same time as the keyspace is being scanned. When you’re scanning an enormous keyspace this is likely a more efficient way to operate. Unforunately this approach doesn’t help in cases where you need to have all matching keys prior to performing the next step in your application.
+The `eachScan()` method is useful if you want to perform work with matched keys at the same time as the keyspace is being scanned. When you’re scanning an enormous keyspace this is likely a more efficient way to operate: you can begin handling matched keys asynchronously, before the scan has finished. Unfortunately this approach doesn’t help in situations where you need to have every matching key prior to performing the next step in your operation/application.
 
-Matching keys are passed to the intermediate callback fuction after each iteration of the Redis `SCAN` command. The final callback is passed a count of how many matching keys were returned.
+Matching keys are passed to the intermediate callback function after each iteration of the Redis `SCAN` command. The final callback is passed a count of how many matching keys were returned.
 
 **Parameters**
 
