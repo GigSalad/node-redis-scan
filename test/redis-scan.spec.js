@@ -12,11 +12,13 @@ describe('Redis scan tests', function() {
 	let client = null;
 	let scanner = null;
 	let testKeys = [];
+	let testValues = [];
 	let testKeysValues = [];
 
 	// We want a unique key suffix to let us avoid touching any other
 	// objects stored in this Redis database.
 	const keySuffix = uuidv4();
+	const keyPrefix = 'redis-scan-test';
 
 	// Pre-test setup
 	before(function(done) {
@@ -29,19 +31,25 @@ describe('Redis scan tests', function() {
 
 		// Create 1000 test keys
 		for (let i = 0; i < 1000; i++) {
-			key = `redis-scan-test:${i}:${keySuffix}`;
+			key = `${keyPrefix}:${i}:${keySuffix}`;
 			value = `Test key ${i}`;
 
 			// Use the format `mset()` expects:
 			// [key1, value1, key2, value2, ...etc]
 			testKeysValues.push(key, value);
 
-			// Also keep track of keys explicitly to delete them later.
+			// Keep track of keys and values explicitly for later use.
 			testKeys.push(key);
+			testValues.push(value);
 		}
 
-		// Store those test keys...
-		client.mset(testKeysValues, done);
+		// Store the test keys...
+		client.multi()
+			.mset(testKeysValues)
+			.hmset(`${keyPrefix}:hash-test:${keySuffix}`, testKeysValues)
+			.sadd(`${keyPrefix}:set-test:${keySuffix}`, testValues)
+			.zadd(`${keyPrefix}:sorted-set-test:${keySuffix}`, testValues.map(value => [1, value]).flat())
+			.exec(done);
 	});
 
 	// Post-test teardown
@@ -50,6 +58,13 @@ describe('Redis scan tests', function() {
 			// Likely not connected if the tests succeeded, so reconnect
 			client = redis.createClient();
 		}
+
+		// Ensure the hash, set, and sorted set also get removed
+		testKeys.push(
+			`${keyPrefix}:hash-test:${keySuffix}`,
+			`${keyPrefix}:set-test:${keySuffix}`,
+			`${keyPrefix}:sorted-set-test:${keySuffix}`
+		);
 
 		// Remove all the test keys and disconnect.
 		client.del(testKeys, () => {
@@ -61,7 +76,7 @@ describe('Redis scan tests', function() {
 	// Tests:
 
 	describe('Full scan...', function() {
-		const scanPattern = `redis-scan-test:90*:${keySuffix}`;
+		const scanPattern = `${keyPrefix}:90*:${keySuffix}`;
 
 		it(`Should find 11 keys matching pattern ${scanPattern}`, function(done) {
 			scanner.scan(scanPattern, function(err, matchingKeys) {
@@ -73,8 +88,47 @@ describe('Redis scan tests', function() {
 		});
 	});
 
+	describe('Full hash scan...', function() {
+		const hScanPattern = `${keyPrefix}:90*:${keySuffix}`;
+
+		it(`Should find 22 hash keys and values matching pattern ${hScanPattern}`, function(done) {
+			scanner.hscan(`${keyPrefix}:hash-test:${keySuffix}`, hScanPattern, function(err, matches) {
+				if (err) return done(err);
+
+				assert.equal(matches.length, 22);
+				done();
+			})
+		});
+	});
+
+	describe('Full set scan...', function() {
+		const sScanPattern = `*90*`;
+
+		it(`Should find 11 set values matching pattern ${sScanPattern}`, function(done) {
+			scanner.sscan(`${keyPrefix}:set-test:${keySuffix}`, sScanPattern, function(err, matchingValues) {
+				if (err) return done(err);
+
+				assert.equal(matchingValues.length, 20);
+				done();
+			})
+		});
+	});
+
+	describe('Full sorted set scan...', function() {
+		const zScanPattern = `*90*`;
+
+		it(`Should find 40 sorted set values with scores matching pattern ${zScanPattern}`, function(done) {
+			scanner.zscan(`${keyPrefix}:sorted-set-test:${keySuffix}`, zScanPattern, function(err, matchingValuesWithScores) {
+				if (err) return done(err);
+
+				assert.equal(matchingValuesWithScores.length, 40);
+				done();
+			})
+		});
+	});
+
 	describe('Each scan...', function() {
-		const scanPattern = `redis-scan-test:*20:${keySuffix}`;
+		const scanPattern = `${keyPrefix}:*20:${keySuffix}`;
 
 		it(`Should find 10 keys matching pattern ${scanPattern}`, function(done) {
 			scanner.eachScan(scanPattern, (matchingKeys) => {
@@ -83,6 +137,66 @@ describe('Redis scan tests', function() {
 				if (err) return done(err);
 
 				assert.equal(matchCount, 10);
+				done();
+			});
+		});
+	});
+
+	describe('Each scan with custom COUNT option...', function() {
+		const scanPattern = `${keyPrefix}:*20:${keySuffix}`;
+
+		it(`Should find 10 keys using count options of 200 matching pattern ${scanPattern}`, function(done) {
+			scanner.eachScan(scanPattern, {count: 200}, (matchingKeys) => {
+				// Intentionally do nothing with any matches
+			}, (err, matchCount) => {
+				if (err) return done(err);
+
+				assert.equal(matchCount, 10);
+				done();
+			});
+		});
+	});
+
+	describe('Each hash scan...', function() {
+		const scanPattern = `${keyPrefix}:*20:${keySuffix}`;
+
+		it(`Should find 20 hash keys and values matching pattern ${scanPattern}`, function(done) {
+			scanner.eachHScan(`${keyPrefix}:hash-test:${keySuffix}`, scanPattern, (matches) => {
+				// Intentionally do nothing with any matches
+			}, (err, matchCount) => {
+				if (err) return done(err);
+
+				assert.equal(matchCount, 20);
+				done();
+			});
+		});
+	});
+
+	describe('Each set scan...', function() {
+		const scanPattern = `*20*`;
+
+		it(`Should find 20 set values matching pattern ${scanPattern}`, function(done) {
+			scanner.eachSScan(`${keyPrefix}:set-test:${keySuffix}`, scanPattern, (matchingValues) => {
+				// Intentionally do nothing with any matches
+			}, (err, matchCount) => {
+				if (err) return done(err);
+
+				assert.equal(matchCount, 20);
+				done();
+			});
+		});
+	});
+
+	describe('Each sorted set scan...', function() {
+		const scanPattern = `*20*`;
+
+		it(`Should find 40 set values with scores matching pattern ${scanPattern}`, function(done) {
+			scanner.eachZScan(`${keyPrefix}:sorted-set-test:${keySuffix}`, scanPattern, (matchingValuesWithScores) => {
+				// Intentionally do nothing with any matches
+			}, (err, matchCount) => {
+				if (err) return done(err);
+
+				assert.equal(matchCount, 40);
 				done();
 			});
 		});
