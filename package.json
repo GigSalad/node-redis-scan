@@ -1,6 +1,6 @@
 {
   "name": "node-redis-scan",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "A simple ES6 Redis key scanner for Node",
   "keywords": [
     "redis",
@@ -22,9 +22,9 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
-    "mocha": "^6.0.0",
-    "nyc": "^14.0.0",
-    "redis": "^2.8.0",
-    "uuid": "^3.3.2"
+    "mocha": "^7.0.0",
+    "nyc": "^15.0.0",
+    "redis": "^3.0.0",
+    "uuid": "^7.0.2"
   }
 }
