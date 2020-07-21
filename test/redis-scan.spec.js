@@ -1,7 +1,7 @@
 const assert = require('assert');
 const redis = require('redis');
 const redisScan = require('../redis-scan');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 
 describe('Redis scan tests', function() {
 

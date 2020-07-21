@@ -1,17 +1,18 @@
 # Node Redis key scanner
 
-A simple ES6 Redis key scanner for Node 8 and newer. This is a small class that allows you to do one thing quickly and easily: scan a Redis key space for keys that match a given pattern.
+A simple ES6 Redis key scanner for Node 10 and newer. This is a small class that allows you to do one thing quickly and easily: scan a Redis key space for keys that match a given pattern.
 
 See the [Redis SCAN command documentation](https://redis.io/commands/scan) for information about how to write patterns for matching, the guarantees, caveats, etc.
 
 # Install
-With Yarn:
-```
-yarn add node-redis-scan
-```
-Or with NPM:
+With NPM:
 ```
 npm install node-redis-scan
+```
+
+Or with Yarn:
+```
+yarn add node-redis-scan
 ```
 
 # Use
@@ -180,7 +181,7 @@ scanner.zscan('name-of-sorted-set', 'some-pattern*', (err, matchingMembersScores
 Tests are run via [Istanbul](https://github.com/istanbuljs/nyc) and [Mocha](https://github.com/mochajs/mocha). Clone the project then run:
 
 ```
-yarn test
+npm run test
 ```
 
 # Contribute
