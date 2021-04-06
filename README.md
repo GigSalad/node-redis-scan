@@ -19,6 +19,15 @@ yarn add node-redis-scan
 
 Instantiate this class with a [Node Redis client](https://github.com/NodeRedis/node_redis) and then perform key space scans! Redis also supports scanning through hashes, sets, and sorted sets with the `HSCAN`, `SSCAN`, and `ZSCAN` commands, respectively. This functionality is available by calling the appropriately named functions listed below.
 
+### Table of contents
+
+- [scan()](#the-scan-method)
+- [eachScan()](#the-eachscan-method)
+- [hscan(), eachHScan()](#the-hscan-and-eachhscan-methods)
+- [sscan(), eachSScan()](#the-sscan-and-eachsscan-methods)
+- [zscan(), eachZScan()](#the-zscan-and-eachzscan-methods)
+- [Canceling a scan before it has finished](#canceling-a-scan-before-it-has-finished)
+
 ### The `scan()` method
 
 The `scan()` method provides the easiest way to scan your key space with a single callback that will be passed all matching keys. Depending on the size of your key space (millions of keys and beyond) this process might take many seconds or longer.
@@ -28,7 +37,7 @@ The `scan()` method provides the easiest way to scan your key space with a singl
 |Name|Type|Description|
 |-|-|-|
 |`pattern`|string|The Redis glob-style string pattern to match keys against.|
-|`options`|object _(optional)_|An object for configuring the precise scan parameters. Available options:<br><ul><li>`method` - String name for which underlying Redis scan method we want to use. Defaults to 'scan' and can be set to one of 'hscan', 'sscan', or 'zscan'.</li><li>`key` - The string name of the applicable key. Required if the `method` is set to 'hscan', 'sscan', or 'zscan'.</li><li>`count` - A number representing how much work Redis should do with each iteration of the given scan command. This is useful if you want to scan a huge key space faster. The trade off is lengthening the brief segments of time that Redis is locked doing work scanning. See the [Redis COUNT option documentation](https://redis.io/commands/scan#the-count-option).</li></ul>|
+|`options`|object _(optional)_|An object for configuring the precise scan parameters. Available options:<br><ul><li>`method` - String name for which underlying Redis scan method we want to use. Defaults to 'scan' and can be set to one of 'hscan', 'sscan', or 'zscan'.</li><li>`key` - The string name of the applicable key. Required if the `method` is set to 'hscan', 'sscan', or 'zscan'.</li><li>`count` - A number representing how much work Redis should do with each iteration of the given scan command. This is useful if you want to scan a huge key space faster. The trade off is lengthening the brief segments of time that Redis is locked doing work scanning. See the [Redis COUNT option documentation](https://redis.io/commands/scan#the-count-option).</li><li>`type` - A string name of a Redis key type. This is used for searching for keys of a certain type. See the [Redis TYPE option documentation](https://redis.io/commands/scan#the-type-option).</li><li>`limit` - A number representing a limit for how many results should be returned. Because of the nature of the Redis SCAN command plus the interaction with the `count` option we can never guarantee returning this exact limit. When the limit is reached _or exceeded_ the scan halts and is considered complete.</li></ul>|
 |`callback`|function|Invoked with (err, matchingKeys).|
 
 **Example**
@@ -67,8 +76,8 @@ Matching keys are passed to the intermediate callback function after each iterat
 |Name|Type|Description|
 |-|-|-|
 |`pattern`|string|The Redis glob-style string pattern to match keys against.|
-|`options`|object _(optional)_|An object for configuring the precise scan parameters. Available options:<br><ul><li>`method` - String name for which underlying Redis scan method we want to use. Defaults to 'scan' and can be set to one of 'hscan', 'sscan', or 'zscan'.</li><li>`key` - The string name of the applicable key. Required if the `method` is set to 'hscan', 'sscan', or 'zscan'.</li><li>`count` - A number representing how much work Redis should do with each iteration of the given scan command. This is useful if you want to scan a huge key space faster. The trade off is lengthening the brief segments of time that Redis is locked doing work scanning. See the [Redis COUNT option documentation](https://redis.io/commands/scan#the-count-option).</li></ul>|
-|`eachScanCallback`|function|Invoked with (matchingKeys).|
+|`options`|object _(optional)_|An object for configuring the precise scan parameters. Available options:<br><ul><li>`method` - String name for which underlying Redis scan method we want to use. Defaults to 'scan' and can be set to one of 'hscan', 'sscan', or 'zscan'.</li><li>`key` - The string name of the applicable key. Required if the `method` is set to 'hscan', 'sscan', or 'zscan'.</li><li>`count` - A number representing how much work Redis should do with each iteration of the given scan command. This is useful if you want to scan a huge key space faster. The trade off is lengthening the brief segments of time that Redis is locked doing work scanning. See the [Redis COUNT option documentation](https://redis.io/commands/scan#the-count-option).</li><li>`type` - A string name of a Redis key type. This is used for searching for keys of a certain type. See the [Redis TYPE option documentation](https://redis.io/commands/scan#the-type-option).</li><li>`limit` - A number representing a limit for how many results should be returned. Because of the nature of the Redis SCAN command plus the interaction with the `count` option we can never guarantee returning this exact limit. When the limit is reached _or exceeded_ the scan halts and is considered complete.</li></ul>|
+|`eachScanCallback`|function|This intermediate callback is used for handling matching keys as they are returned. This function can also signal cancellation of the overall scan, if desired, by returning boolean `true`.<br><br>Invoked with (matchingKeys).|
 |`callback`|function|Invoked with (err, matchCount).|
 
 **Example**
@@ -123,7 +132,7 @@ scanner.eachHScan('name-of-hash', 'some-pattern*', (matchingKeysValues) => {
     if (matchingKeysValues.length) {
         // Matching keys and values of the hash found after this
         // iteration of the HSCAN command.
-        console.log(matchingKeys);
+        console.log(matchingKeysValues);
     }
 }, (err, matchCount) => {
     if (err) throw(err);
@@ -174,6 +183,39 @@ scanner.zscan('name-of-sorted-set', 'some-pattern*', (err, matchingMembersScores
 
 // When working with an enormous sorted set you might prefer the
 // `eachZScan()` approach, which is similar to `eachScan()`
+```
+
+### Canceling a scan before it has finished
+
+Using the `limit` option with either the `scan()` or `eachScan()` method allows us to halt or cancel a scan after a certain "limit" of matching keys have been found. Note that we might receive _more_ matching keys than the specified `limit` because of the nature of the Redis SCAN command.
+
+**Example**
+
+```js
+scanner.scan('some-pattern*', {limit: 5}, (err, matchingKeys) => {
+    if (err) throw(err);
+
+    // We'll have 5 or more matching keys here and the scan
+    // will have been canceled before it completed.
+    console.log(matchingKeys);
+});
+```
+
+Alternatively, we can use the `eachScanCallback` function parameter of the `eachScan()` method for more fine-grained cancellation of a scan.
+
+**Example**
+
+```js
+scanner.eachScan(scanPattern, (matchingKeys) => {
+    // Do something arbitrary and then return `true` to cancel the scan.
+    if (Math.random() > 0.5) {
+        return true;
+    }
+}, (err, matchCount) => {
+    if (err) throw(err);
+
+    console.log(`Found ${matchCount} keys after canceling the scan arbitrarily.`);
+});
 ```
 
 # Test

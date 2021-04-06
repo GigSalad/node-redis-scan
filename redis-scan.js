@@ -40,12 +40,26 @@ class RedisScan {
 	 * with each iteration of the given SCAN command. Increase this to hundreds
 	 * or thousands to speed up scans of huge keyspaces.
 	 * See: https://redis.io/commands/scan#the-count-option
+	 * * `type` - A string name of a Redis key type. Used for searching
+	 * the entire Redis key space for keys of a certain type.
+	 * See: https://redis.io/commands/scan#the-type-option
+	 * * `limit` - A number representing a limit for how many results
+	 * should be returned. Because of the nature of the Redis SCAN
+	 * command and possible interaction with the `count` option we can
+	 * never guarantee returning this exact limit. As soon as we reach
+	 * or exceed the limit then we halt the scan and call the final
+	 * callback appropriately.
 	 *
 	 * @param {Function} eachScanCallback - A function called after each
 	 * call to the Redis `SCAN` command. Invoked with (matchingKeys).
+	 * If this function returns boolean `true` then this signals cancellation
+	 * of the scan. No further `SCAN` commands will be run and the final
+	 * callback will be called with the current count of matching keys.
+	 * This allows us to halt a scan before it has finished.
 	 *
 	 * @param {Function} [callback] - A function called after the full scan has
 	 * completed and all keys have been returned.
+	 * Invoked with (err, matchCount).
 	 */
 	eachScan(pattern, options, eachScanCallback, callback) {
 		if (!callback) {
@@ -57,6 +71,8 @@ class RedisScan {
 		const method = options.method || 'scan';
 		const key = options.key || '';
 		const count = options.count || 0;
+		const type = options.type || '';
+		const limit = options.limit || Infinity;
 
 		let matchesCount = 0;
 
@@ -75,6 +91,11 @@ class RedisScan {
 				parameters.push('COUNT', count);
 			}
 
+			// Add any custom `TYPE` scan option.
+			if (type) {
+				parameters.push('TYPE', type);
+			}
+
 			this.redisClient[method](...parameters, (err, data) => {
 				if (err) {
 					callback(err);
@@ -86,10 +107,13 @@ class RedisScan {
 					const [cursor, matches] = data;
 
 					matchesCount += matches.length;
-					eachScanCallback(matches);
+					const cancel = eachScanCallback(matches);
 
-					// We're done once Redis returns 0 for the next cursor.
-					if (cursor === '0') {
+					// We're done when any of the following happen:
+					// - Redis returns 0 for the next cursor
+					// - We have the number of results desired via limit
+					// - The return value of eachScanCallback is `true`
+					if (cursor === '0' || matchesCount >= limit || cancel === true) {
 						callback(null, matchesCount);
 					} else {
 						// Otherwise, call this function again AKA recurse
@@ -122,7 +146,7 @@ class RedisScan {
 	 *
 	 * @param {Function} [callback] - A function called after the full scan
 	 * of the Redis keyspace completes having searched for the given pattern.
-	 * Invoked with (err, keys).
+	 * Invoked with (err, matchingKeys).
 	 */
 	scan(pattern, options, callback) {
 		if (!callback) {
@@ -159,7 +183,7 @@ class RedisScan {
 	 * @param {Function} [callback]
 	 */
 	hscan(key, pattern, callback) {
-		this.scan(pattern, {method: 'hscan', key: key}, callback);
+		this.scan(pattern, {method: 'hscan', key}, callback);
 	}
 
 	/**
@@ -177,7 +201,7 @@ class RedisScan {
 	 * @param {Function} [callback]
 	 */
 	eachHScan(key, pattern, eachScanCallback, callback) {
-		this.eachScan(pattern, {method: 'hscan', key: key}, eachScanCallback, callback);
+		this.eachScan(pattern, {method: 'hscan', key}, eachScanCallback, callback);
 	}
 
 	/**
@@ -193,7 +217,7 @@ class RedisScan {
 	 * @param {Function} [callback]
 	 */
 	sscan(key, pattern, callback) {
-		this.scan(pattern, {method: 'sscan', key: key}, callback);
+		this.scan(pattern, {method: 'sscan', key}, callback);
 	}
 
 	/**
@@ -211,7 +235,7 @@ class RedisScan {
 	 * @param {Function} [callback]
 	 */
 	eachSScan(key, pattern, eachScanCallback, callback) {
-		this.eachScan(pattern, {method: 'sscan', key: key}, eachScanCallback, callback);
+		this.eachScan(pattern, {method: 'sscan', key}, eachScanCallback, callback);
 	}
 
 	/**
@@ -228,7 +252,7 @@ class RedisScan {
 	 * @param {Function} [callback]
 	 */
 	zscan(key, pattern, callback) {
-		this.scan(pattern, {method: 'zscan', key: key}, callback);
+		this.scan(pattern, {method: 'zscan', key}, callback);
 	}
 
 	/**
@@ -246,7 +270,7 @@ class RedisScan {
 	 * @param {Function} [callback]
 	 */
 	eachZScan(key, pattern, eachScanCallback, callback) {
-		this.eachScan(pattern, {method: 'zscan', key: key}, eachScanCallback, callback);
+		this.eachScan(pattern, {method: 'zscan', key}, eachScanCallback, callback);
 	}
 }
 
