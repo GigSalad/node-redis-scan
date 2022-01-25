@@ -1,23 +1,22 @@
 # Node Redis key scanner
 
-A simple ES6 Redis key scanner for Node 10 and newer. This is a small class that allows you to do one thing quickly and easily: scan a Redis key space for keys that match a given pattern.
+A simple ES6 Redis key scanner for Node 16 and newer. This is a small class that allows you to do one thing quickly and easily: scan a Redis key space for keys that match a given pattern.
 
 See the [Redis SCAN command documentation](https://redis.io/commands/scan) for information about how to write patterns for matching, the guarantees, caveats, etc.
 
+# Using older Node.js or Node Redis client versions
+
+If you are using a version of Node.js below 16.x or Node Redis below 4.x then you will need to use the 1.x version of this library. The functionality is equivalent and the API maintains the traditional error-first callback style.
+
 # Install
-With NPM:
+
 ```
 npm install node-redis-scan
 ```
 
-Or with Yarn:
-```
-yarn add node-redis-scan
-```
-
 # Use
 
-Instantiate this class with a [Node Redis client](https://github.com/NodeRedis/node_redis) and then perform key space scans! Redis also supports scanning through hashes, sets, and sorted sets with the `HSCAN`, `SSCAN`, and `ZSCAN` commands, respectively. This functionality is available by calling the appropriately named functions listed below.
+Instantiate this class with a _version 4_ [Node Redis client](https://github.com/redis/node-redis) and then perform key space scans! Redis also supports scanning through hashes, sets, and sorted sets with the `HSCAN`, `SSCAN`, and `ZSCAN` commands, respectively. This functionality is available by calling the appropriately named functions listed below.
 
 ### Table of contents
 
