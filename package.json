@@ -11,6 +11,13 @@
   "engines": {
     "node": ">= 10.12.0"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22",
+      "onFail": "error"
+    }
+  },
   "scripts": {
     "test": "nyc mocha"
   },
@@ -29,6 +36,7 @@
   },
   "overrides": {
     "diff": "^9.0.0",
+    "glob": "^13.0.6",
     "serialize-javascript": "^7.0.5",
     "uuid": "^14.0.0"
   }
